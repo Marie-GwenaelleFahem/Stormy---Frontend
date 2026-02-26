@@ -3,6 +3,7 @@ import { User, Message, Conversation } from "../types";
 
 interface ChatState {
   conversations: Conversation[];
+  archivedConversations: Conversation[];
   activeConversationId: string | null;
   messages: Record<string, Message[]>;
   users: User[];
@@ -21,10 +22,14 @@ interface ChatState {
   ) => void;
   incrementUnread: (conversationId: string) => void;
   resetUnread: (conversationId: string) => void;
+  archiveConversation: (conversationId: string) => void;
+  unarchiveConversation: (conversationId: string) => void;
+  deleteConversation: (conversationId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
+  archivedConversations: [],
   activeConversationId: null,
   messages: {},
   users: [],
@@ -97,5 +102,53 @@ export const useChatStore = create<ChatState>((set, get) => ({
       conversations: state.conversations.map((conv) =>
         conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv,
       ),
+    })),
+
+  archiveConversation: (conversationId) =>
+    set((state) => {
+      const convToArchive = state.conversations.find(
+        (conv) => conv.id === conversationId,
+      );
+      if (!convToArchive) return state;
+
+      return {
+        conversations: state.conversations.filter(
+          (conv) => conv.id !== conversationId,
+        ),
+        archivedConversations: [...state.archivedConversations, convToArchive],
+        activeConversationId:
+          state.activeConversationId === conversationId
+            ? null
+            : state.activeConversationId,
+      };
+    }),
+
+  unarchiveConversation: (conversationId) =>
+    set((state) => {
+      const convToUnarchive = state.archivedConversations.find(
+        (conv) => conv.id === conversationId,
+      );
+      if (!convToUnarchive) return state;
+
+      return {
+        archivedConversations: state.archivedConversations.filter(
+          (conv) => conv.id !== conversationId,
+        ),
+        conversations: [...state.conversations, convToUnarchive],
+      };
+    }),
+
+  deleteConversation: (conversationId) =>
+    set((state) => ({
+      conversations: state.conversations.filter(
+        (conv) => conv.id !== conversationId,
+      ),
+      archivedConversations: state.archivedConversations.filter(
+        (conv) => conv.id !== conversationId,
+      ),
+      activeConversationId:
+        state.activeConversationId === conversationId
+          ? null
+          : state.activeConversationId,
     })),
 }));

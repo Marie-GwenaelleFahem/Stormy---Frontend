@@ -1,15 +1,22 @@
 import { Conversation } from "../types";
+import ConversationMenu from "./ConversationMenu";
 
 interface ConversationItemProps {
   conversation: Conversation;
   isActive: boolean;
   onClick: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  isArchived?: boolean;
 }
 
 export default function ConversationItem({
   conversation,
   isActive,
   onClick,
+  onArchive,
+  onDelete,
+  isArchived = false,
 }: ConversationItemProps) {
   const otherUser = conversation.participants[0];
 
@@ -29,17 +36,23 @@ export default function ConversationItem({
             <h3 className="font-semibold text-gray-900 truncate">
               {otherUser.username}
             </h3>
-            {conversation.lastMessage && (
-              <span className="text-xs text-gray-500 ml-2">
-                {new Date(conversation.lastMessage.timestamp).toLocaleTimeString(
-                  "fr-FR",
-                  {
+            <div className="flex items-center space-x-2">
+              {conversation.lastMessage && (
+                <span className="text-xs text-gray-500">
+                  {new Date(
+                    conversation.lastMessage.timestamp,
+                  ).toLocaleTimeString("fr-FR", {
                     hour: "2-digit",
                     minute: "2-digit",
-                  }
-                )}
-              </span>
-            )}
+                  })}
+                </span>
+              )}
+              <ConversationMenu
+                onArchive={onArchive}
+                onDelete={onDelete}
+                isArchived={isArchived}
+              />
+            </div>
           </div>
           {conversation.lastMessage && (
             <p className="text-sm text-gray-600 truncate">

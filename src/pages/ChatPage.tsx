@@ -10,15 +10,20 @@ import { User, Conversation } from "../types";
 export default function ChatPage() {
   const {
     conversations,
+    archivedConversations,
     activeConversationId,
     messages,
     setActiveConversation,
     setConversations,
     setMessages,
     addMessage,
+    archiveConversation,
+    unarchiveConversation,
+    deleteConversation,
   } = useChatStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -92,29 +97,73 @@ export default function ChatPage() {
     <>
       <div className="flex h-screen bg-gray-100">
         <div className="w-1/3 bg-white border-r border-gray-200">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-800">Conversations</h2>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
-            >
-              + Nouveau
-            </button>
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xl font-bold text-gray-800">Conversations</h2>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
+              >
+                + Nouveau
+              </button>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowArchived(false)}
+                className={`flex-1 py-1 text-sm rounded ${
+                  !showArchived
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                Actives ({conversations.length})
+              </button>
+              <button
+                onClick={() => setShowArchived(true)}
+                className={`flex-1 py-1 text-sm rounded ${
+                  showArchived
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                Archivées ({archivedConversations.length})
+              </button>
+            </div>
           </div>
-          <div className="overflow-y-auto h-[calc(100vh-73px)]">
-            {conversations.length === 0 ? (
+          <div className="overflow-y-auto h-[calc(100vh-121px)]">
+            {(showArchived ? archivedConversations : conversations).length ===
+            0 ? (
               <div className="p-4 text-center text-gray-500">
-                Aucune conversation
+                {showArchived
+                  ? "Aucune conversation archivée"
+                  : "Aucune conversation"}
               </div>
             ) : (
-              conversations.map((conv) => (
-                <ConversationItem
-                  key={conv.id}
-                  conversation={conv}
-                  isActive={conv.id === activeConversationId}
-                  onClick={() => setActiveConversation(conv.id)}
-                />
-              ))
+              (showArchived ? archivedConversations : conversations).map(
+                (conv) => (
+                  <ConversationItem
+                    key={conv.id}
+                    conversation={conv}
+                    isActive={conv.id === activeConversationId}
+                    onClick={() => setActiveConversation(conv.id)}
+                    onArchive={() =>
+                      showArchived
+                        ? unarchiveConversation(conv.id)
+                        : archiveConversation(conv.id)
+                    }
+                    onDelete={() => {
+                      if (
+                        window.confirm(
+                          "Êtes-vous sûr de vouloir supprimer cette conversation ?",
+                        )
+                      ) {
+                        deleteConversation(conv.id);
+                      }
+                    }}
+                    isArchived={showArchived}
+                  />
+                ),
+              )
             )}
           </div>
         </div>
