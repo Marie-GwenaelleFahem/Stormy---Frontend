@@ -1,7 +1,9 @@
 export interface User {
   id: string;
   username: string;
-  email?: string;
+  email: string;
+  passwordHash: string;
+  createdAt: number;
   avatar?: string;
   status: "online" | "offline" | "away";
   lastSeen?: number;

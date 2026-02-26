@@ -6,8 +6,10 @@ import MessageInput from "../components/MessageInput";
 import NewConversationModal from "../components/NewConversationModal";
 import { mockConversations, mockMessages, mockUsers } from "../utils/mockData";
 import { User, Conversation } from "../types";
+import { useAuth } from "../auth";
 
 export default function ChatPage() {
+  const { user, logout } = useAuth();
   const {
     conversations,
     archivedConversations,
@@ -97,6 +99,30 @@ export default function ChatPage() {
     <>
       <div className="flex h-screen bg-gray-100">
         <div className="w-1/3 bg-white border-r border-gray-200">
+          {/* Header with user info */}
+          <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
+                  {user?.username?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800">
+                    {user?.username}
+                  </p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                className="px-3 py-1 text-xs bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                title="Déconnexion"
+              >
+                Déconnexion
+              </button>
+            </div>
+          </div>
+
           <div className="p-4 border-b border-gray-200">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xl font-bold text-gray-800">Conversations</h2>
@@ -130,7 +156,7 @@ export default function ChatPage() {
               </button>
             </div>
           </div>
-          <div className="overflow-y-auto h-[calc(100vh-121px)]">
+          <div className="overflow-y-auto h-[calc(100vh-188px)]">
             {(showArchived ? archivedConversations : conversations).length ===
             0 ? (
               <div className="p-4 text-center text-gray-500">

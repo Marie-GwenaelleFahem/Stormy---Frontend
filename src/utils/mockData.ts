@@ -1,34 +1,57 @@
 import { Conversation, Message, User } from "../types";
 
+// Mot de passe pour tous les users : "password123"
+// Hash SHA-256 : ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f
+const DEFAULT_PASSWORD_HASH =
+  "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f";
+
 export const mockUsers: User[] = [
   {
     id: "user-1",
     username: "Alice",
+    email: "alice@example.com",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
     status: "online",
   },
   {
     id: "user-2",
     username: "Bob",
+    email: "bob@example.com",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
     status: "offline",
   },
   {
     id: "user-3",
     username: "Charlie",
+    email: "charlie@example.com",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
     status: "away",
   },
   {
     id: "user-4",
     username: "David",
+    email: "david@example.com",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    createdAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
     status: "online",
   },
   {
     id: "user-5",
     username: "Emma",
+    email: "emma@example.com",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    createdAt: Date.now() - 25 * 24 * 60 * 60 * 1000,
     status: "online",
   },
   {
     id: "user-6",
     username: "Frank",
+    email: "frank@example.com",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
     status: "offline",
   },
 ];
