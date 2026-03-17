@@ -1,129 +1,92 @@
 import { User } from "../types";
-import { mockUsers } from "../utils/mockData";
+import { authApi } from "../services";
 
 /**
- * Hash un mot de passe avec SHA-256
- */
-export const hashPassword = async (password: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-};
-
-/**
- * Vérifie un mot de passe contre un hash
- */
-export const verifyPassword = async (
-  password: string,
-  passwordHash: string,
-): Promise<boolean> => {
-  const hash = await hashPassword(password);
-  return hash === passwordHash;
-};
-
-/**
- * Trouve un utilisateur par email
- */
-export const findUserByEmail = (email: string): User | undefined => {
-  return mockUsers.find(
-    (user) => user.email.toLowerCase() === email.toLowerCase(),
-  );
-};
-
-/**
- * Vérifie si un email existe déjà
- */
-export const emailExists = (email: string): boolean => {
-  return !!findUserByEmail(email);
-};
-
-/**
- * Vérifie si un username existe déjà
- */
-export const usernameExists = (username: string): boolean => {
-  return mockUsers.some(
-    (user) => user.username.toLowerCase() === username.toLowerCase(),
-  );
-};
-
-/**
- * Authentifie un utilisateur
+ * Authentifie un utilisateur via l'API Azure
  */
 export const authenticate = async (
-  email: string,
+  username: string,
   password: string,
 ): Promise<User | null> => {
-  const user = findUserByEmail(email);
-  if (!user) {
+  try {
+    const user = await authApi.login({ username, password });
+    return user;
+  } catch (error) {
+    console.error("Login error:", error);
     return null;
   }
-
-  const isValid = await verifyPassword(password, user.passwordHash);
-  return isValid ? user : null;
 };
 
 /**
- * Crée un nouvel utilisateur (mock - en attendant le back)
+ * Crée un nouvel utilisateur via l'API Azure
  */
 export const registerUser = async (
+  phone: string,
   username: string,
-  email: string,
   password: string,
+  email?: string,
 ): Promise<User> => {
-  const passwordHash = await hashPassword(password);
-
-  const newUser: User = {
-    id: `user-${Date.now()}`,
-    username,
-    email,
-    passwordHash,
-    createdAt: Date.now(),
-    status: "online",
-  };
-
-  // En dev, on l'ajoute au mock
-  mockUsers.push(newUser);
-
-  return newUser;
+  try {
+    const user = await authApi.register({
+      phone,
+      username,
+      password,
+      email,
+    });
+    return user;
+  } catch (error) {
+    console.error("Register error:", error);
+    throw error;
+  }
 };
 
 /**
- * Génère un token JWT mock (en attendant le back)
+ * Valide un email (format basique)
  */
-export const generateMockToken = (user: User): string => {
-  const payload = {
-    userId: user.id,
-    email: user.email,
-    username: user.username,
-    iat: Date.now(),
-    exp: Date.now() + 24 * 60 * 60 * 1000, // 24h
-  };
-
-  // En production, ce serait un vrai JWT signé côté serveur
-  return btoa(JSON.stringify(payload));
+export const isValidEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
 /**
- * Décode un token JWT mock
+ * Valide un téléphone (format basique)
+ */
+export const isValidPhone = (phone: string): boolean => {
+  return phone.length >= 10;
+};
+
+/**
+ * Valide un username
+ */
+export const isValidUsername = (username: string): boolean => {
+  return username.length >= 3 && username.length <= 50;
+};
+
+/**
+ * Décode un token JWT standard (3 parties)
  */
 export const decodeMockToken = (token: string): any => {
   try {
-    return JSON.parse(atob(token));
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    return JSON.parse(atob(parts[1]));
   } catch {
     return null;
   }
 };
 
 /**
- * Vérifie si un token est valide
+ * Vérifie si un token JWT est valide
  */
 export const isTokenValid = (token: string): boolean => {
+  if (!token) return false;
+
   const decoded = decodeMockToken(token);
-  if (!decoded || !decoded.exp) {
-    return false;
+  if (!decoded) return false;
+
+  // Vérifier l'expiration si présente
+  if (decoded.exp) {
+    return decoded.exp * 1000 > Date.now();
   }
 
-  return decoded.exp > Date.now();
+  return true;
 };

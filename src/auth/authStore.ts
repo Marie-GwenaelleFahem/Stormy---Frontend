@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User } from "../types";
-import { decodeMockToken, isTokenValid } from "./authUtils";
+import { authApi } from "../services";
 
 interface AuthState {
   user: User | null;
@@ -10,7 +10,7 @@ interface AuthState {
 
   // Actions
   setAuth: (user: User, token: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   checkAuth: () => void;
 }
 
@@ -29,7 +29,12 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      logout: () => {
+      logout: async () => {
+        try {
+          await authApi.logout();
+        } catch (error) {
+          console.error("Logout error:", error);
+        }
         set({
           user: null,
           token: null,
@@ -39,32 +44,17 @@ export const useAuthStore = create<AuthState>()(
 
       checkAuth: () => {
         const { token } = get();
-
-        if (!token || !isTokenValid(token)) {
+        // Si on a un token (même "cookie"), on considère qu'on est auth
+        // Les cookies seront gérés automatiquement par Axios
+        if (token) {
+          set({ isAuthenticated: true });
+        } else {
           get().logout();
-          return;
-        }
-
-        // Le token est valide, on peut extraire les infos user si nécessaire
-        const decoded = decodeMockToken(token);
-        if (decoded && !get().user) {
-          // Reconstruction basique du user depuis le token
-          set({
-            user: {
-              id: decoded.userId,
-              username: decoded.username,
-              email: decoded.email,
-              passwordHash: "",
-              createdAt: decoded.iat,
-              status: "online",
-            },
-            isAuthenticated: true,
-          });
         }
       },
     }),
     {
-      name: "auth-storage", // localStorage key
+      name: "auth-storage", // localStorage key pour persister l'user
     },
   ),
 );

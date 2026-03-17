@@ -2,34 +2,36 @@ import api from "./api";
 import { User } from "../types";
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  email: string;
+  phone: string;
+  username: string;
   password: string;
-  username?: string;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: User;
+  email?: string;
 }
 
 export const authApi = {
   register: async (data: RegisterRequest) => {
-    const response = await api.post<AuthResponse>("/auth/register", data);
-    return response.data;
+    await api.post("/auth/register", data);
+    // Après registration, les cookies sont définis, récupérer le user
+    return await authApi.me();
   },
 
   login: async (data: LoginRequest) => {
-    const response = await api.post<AuthResponse>("/auth/login", data);
-    return response.data;
+    await api.post("/auth/login", data);
+    // Après login, les cookies sont définis, récupérer le user
+    return await authApi.me();
   },
 
   me: async () => {
     const response = await api.get<User>("/auth/me");
     return response.data;
+  },
+
+  logout: async () => {
+    await api.post("/auth/logout");
   },
 };

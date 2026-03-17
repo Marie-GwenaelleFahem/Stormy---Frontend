@@ -3,9 +3,8 @@ import { useAuth } from "../auth/AuthContext";
 import {
   authenticate,
   registerUser,
-  generateMockToken,
-  emailExists,
-  usernameExists,
+  isValidUsername,
+  isValidPhone,
 } from "../auth/authUtils";
 
 type AuthMode = "login" | "signup";
@@ -17,10 +16,11 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Form fields
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,20 +29,26 @@ export default function AuthPage() {
 
     try {
       if (mode === "login") {
-        // Login
-        const user = await authenticate(email, password);
-        if (!user) {
-          setError("Email ou mot de passe incorrect");
+        // Login avec username + password
+        if (!username || !password) {
+          setError("Tous les champs sont requis");
           setLoading(false);
           return;
         }
 
-        const token = generateMockToken(user);
-        login(user, token);
+        const user = await authenticate(username, password);
+        if (!user) {
+          setError("Identifiants incorrects");
+          setLoading(false);
+          return;
+        }
+
+        // Stocke l'user et le cookie (géré par Axios automatiquement)
+        login(user, "cookie");
       } else {
-        // Signup
+        // Signup avec phone + username + password
         // Validations
-        if (!username || !email || !password) {
+        if (!phone || !username || !password) {
           setError("Tous les champs sont requis");
           setLoading(false);
           return;
@@ -54,31 +60,32 @@ export default function AuthPage() {
           return;
         }
 
-        if (password.length < 6) {
-          setError("Le mot de passe doit contenir au moins 6 caractères");
+        if (password.length < 8) {
+          setError("Le mot de passe doit contenir au moins 8 caractères");
           setLoading(false);
           return;
         }
 
-        if (emailExists(email)) {
-          setError("Cet email est déjà utilisé");
+        if (!isValidPhone(phone)) {
+          setError("Numéro de téléphone invalide");
           setLoading(false);
           return;
         }
 
-        if (usernameExists(username)) {
-          setError("Ce nom d'utilisateur est déjà pris");
+        if (!isValidUsername(username)) {
+          setError("Nom d'utilisateur invalide (3-50 caractères)");
           setLoading(false);
           return;
         }
 
         // Créer le compte
-        const newUser = await registerUser(username, email, password);
-        const token = generateMockToken(newUser);
-        login(newUser, token);
+        const newUser = await registerUser(phone, username, password, email);
+        login(newUser, "cookie");
       }
-    } catch (err) {
-      setError("Une erreur s'est produite. Réessayez.");
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Une erreur s'est produite. Réessayez.";
+      setError(errorMessage);
       console.error(err);
     } finally {
       setLoading(false);
@@ -88,9 +95,10 @@ export default function AuthPage() {
   const switchMode = () => {
     setMode(mode === "login" ? "signup" : "login");
     setError(null);
+    setPhone("");
     setEmail("");
-    setPassword("");
     setUsername("");
+    setPassword("");
     setConfirmPassword("");
   };
 
@@ -112,45 +120,65 @@ export default function AuthPage() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Signup only: Username */}
+            {/* Signup only: Phone */}
             {mode === "signup" && (
               <div>
                 <label
-                  htmlFor="username"
+                  htmlFor="phone"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Nom d'utilisateur
+                  Téléphone
                 </label>
                 <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                  placeholder="JohnDoe"
+                  placeholder="+33612345678"
                   required={mode === "signup"}
                 />
               </div>
             )}
 
-            {/* Email */}
+            {/* Username */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor="username"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Email
+                Nom d'utilisateur
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                placeholder="vous@exemple.com"
+                placeholder="JohnDoe"
                 required
               />
             </div>
+
+            {/* Signup only: Email (optionnel) */}
+            {mode === "signup" && (
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Email (optionnel)
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="vous@exemple.com"
+                />
+              </div>
+            )}
 
             {/* Password */}
             <div>
@@ -169,6 +197,11 @@ export default function AuthPage() {
                 placeholder="••••••••"
                 required
               />
+              {mode === "signup" && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Min 8 caractères, 1 chiffre et 1 caractère spécial requis
+                </p>
+              )}
             </div>
 
             {/* Signup only: Confirm Password */}

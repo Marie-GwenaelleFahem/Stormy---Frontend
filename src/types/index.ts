@@ -1,12 +1,13 @@
 export interface User {
   id: string;
   username: string;
-  email: string;
-  passwordHash: string;
-  createdAt: number;
-  avatar?: string;
-  status: "online" | "offline" | "away";
-  lastSeen?: number;
+  phone: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  about?: string | null;
+  lastSeen?: string | null;
+  createdAt: string;
+  status?: "online" | "offline" | "away";
 }
 
 export interface Message {
