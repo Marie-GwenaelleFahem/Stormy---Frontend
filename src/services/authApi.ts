@@ -1,4 +1,5 @@
 import api from "./api";
+import { useAuthStore } from "../auth/authStore";
 import { User } from "../types";
 
 export interface LoginRequest {
@@ -21,8 +22,15 @@ export const authApi = {
   },
 
   login: async (data: LoginRequest) => {
-    await api.post("/auth/login", data);
-    // Après login, les cookies sont définis, récupérer le user
+    const response = await api.post("/auth/login", data);
+
+    // Capture le token de la réponse du backend
+    if (response.data?.token) {
+      const { setAuth } = useAuthStore.getState();
+      setAuth({ username: data.username } as User, response.data.token);
+    }
+
+    // Maintenant on peut appeler me() avec le token
     return await authApi.me();
   },
 

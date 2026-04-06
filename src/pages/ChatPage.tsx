@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../stores/chatStore";
+import { useAuthStore } from "../auth/authStore";
+import socketService from "../services/socket";
 import ConversationItem from "../components/ConversationItem";
 import MessageBubble from "../components/MessageBubble";
 import MessageInput from "../components/MessageInput";
@@ -51,19 +53,43 @@ export default function ChatPage() {
     scrollToBottom();
   }, [currentMessages]);
 
+  // Connect to WebSocket when conversation changes
+  useEffect(() => {
+    const { token } = useAuthStore.getState();
+
+    if (activeConversationId && user && token) {
+      console.log(
+        `Connecting WebSocket for conversation: ${activeConversationId}`,
+      );
+      socketService.connect(activeConversationId, token);
+    }
+
+    return () => {
+      // Don't disconnect on unmount, keep connection active for the conversation
+    };
+  }, [activeConversationId, user]);
+
   const handleSendMessage = (content: string) => {
     if (!activeConversationId) return;
 
     const newMessage = {
       id: `msg-${Date.now()}`,
       conversationId: activeConversationId,
-      senderId: "current-user-id",
+      senderId: user?.id || "current-user-id",
       content,
       timestamp: Date.now(),
       status: "sent" as const,
     };
 
+    // Add to local store immediately (optimistic update)
     addMessage(newMessage);
+
+    // Send via WebSocket to backend
+    socketService.sendMessage("message:send", {
+      conversationId: activeConversationId,
+      content,
+      senderName: user?.username || "Unknown",
+    });
   };
 
   const handleCreateConversation = (user: User) => {
