@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:30080",
+  baseURL: import.meta.env.VITE_API_URL || "http://20.75.167.214:8080/",
   timeout: 10000,
   withCredentials: true, // Envoyer les cookies avec chaque requête
   headers: {
